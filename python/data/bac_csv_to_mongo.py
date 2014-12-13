@@ -9,7 +9,7 @@ import mongo_util
 from mongo_util import *
 from ..config import *
 
-from unidecode import unidecode
+from ..unidecode import unidecode
 
 '''
 Header: [u'Cod unic candidat ', u'Sex', u'Specializare', u'Profil', u'Fileira', u'Forma de \xeenv\u0
@@ -23,29 +23,75 @@ A_CONTESTATIE_EB', u'CONTESTATIE_EC', u'NOTA_CONTESTATIE_EC', u'CONTESTATIE_ED',
 ED', u'PUNCTAJ DIGITALE', u'STATUS', u'Medie\r\n']
 '''
 
-# TODO(andrei) Nume consecvente de coloane.  Ori toate cu spatii, ori toate cu
-# underscore.  Ori toate caps lock, ori toate cu caractere mici etc.
-# Not used at the moment.
 column_map = {
-	"Forma de \xeenv\u0103\u021b\u0103m\xe2nt": "FORMA_INVATAMANT",
-	"Promo\u021bie" : "PROMOTIE",
-	"Limba modern\u0103" : "LIMBA_MODERNA",
+	"Cod unic candidat": "id",
+	"Sex": "sex",
+	"Specializare": "specializare",
+	"Profil": "profil",
+	"Fileira": "filiera",
+	"Forma de invatamant": "formaInvatamant",
+	"Mediu candidat": "mediuCandidat",
+	"Unitate (SIRUES)": "unitate",
+	"Clasa": "clasa",
+	"Subiect ea": "subiectEa",
+	"Subiect eb": "subiectEb",
+	"Limba moderna" : "limbaModerna",
+	"Subiect ec": "subiectEc",
+	"Subiect ed": "subiectEd",
+	"Promotie" : "promotie",
+	"NOTE_RECUN_A": "noteRecunA",
+	"NOTE_RECUN_B": "noteRecunB",
+	"NOTE_RECUN_C": "noteRecunC",
+	"NOTE_RECUN_D": "noteRecunD",
+	"NOTE_RECUN_EA": "noteRecunEa",
+	"NOTE_RECUN_EB": "noteRecunEb",
+	"NOTE_RECUN_EC": "noteRecunEc",
+	"NOTE_RECUN_ED": "noteRecunEd",
+	"STATUS_A": "statusA",
+	"STATUS_B": "statusB",
+	"STATUS_C": "statusC",
+	"STATUS_D": "statusD",
+	"STATUS_EA": "statusEa",
+	"STATUS_EB": "statusEb",
+	"STATUS_EC": "statusEc",
+	"STATUS_ED": "statusEd",
+	"ITA": "ITA",
+	"SCRIS_ITC": "scrisITC",
+	"SCRIS_PMS": "scrisPMS",
+	"ORAL_PMO": "oralPMO",
+	"ORAL_IO": "oralID",
+	"NOTA_EA": "notaEa",
+	"NOTA_EB": "notaEb",
+	"NOTA_EC": "notaEc",
+	"NOTA_ED": "notaEd",
+	"CONTESTATIE_EA": "contestatieEa",
+	"NOTA_CONTESTATIE_EA": "notaContestatieEa",
+	"CONTESTATIE_EB": "contestatieEa",
+	"NOTA_CONTESTATIE_EB": "notaContestatieEa",
+	"CONTESTATIE_EC": "contestatieEa",
+	"NOTA_CONTESTATIE_EC": "notaContestatieEa",
+	"CONTESTATIE_ED": "contestatieEa",
+	"NOTA_CONTESTATIE_ED": "notaContestatieEa",
+	"PUNCTAJ DIGITALE": "punctajCompetenteDigitale",
+	"STATUS": "status",
+	"Medie": "medie"
 }
 
 def parse_line(header, line):
 	# Herp-derp, the CSV is actually a TSV
-	fields = line.split('\t')
+	fields = [el.strip() for el in line.split('\t')]
 	obj = {}
 	assert len(header) == len(fields)
 	for i in range(len(header)):
-		obj[header[i]] = fields[i]
+		cleanCol = column_map[header[i]]
+		obj[cleanCol] = fields[i]
 	return obj	
 
 def clean_col(col):
 	return unidecode(col)
 
 def parse_header(line):
-	cols = line.split('\t')
+	cols = [el.strip() for el in line.split('\t')]
 	return [clean_col(col) for col in cols]
 
 def main():
