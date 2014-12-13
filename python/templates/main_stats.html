@@ -9,7 +9,7 @@
 
 {% block body %}
 	<p class="lead">Baza de date contine {{ data.count() }} câmpuri.</p>
-	<table class="table table-striped table-hover table-condensed table-border">
+	<table class="table table-striped table-hover table-condensed table-bordered">
 		<tr>
 			{% for h in header %}
 			<th>{{ h }}</th>
@@ -18,7 +18,7 @@
 		
 	    {% for row in sample %}
 	    <tr>
-	    	{% for key in header %}
+	    	{% for key in keys %}
 	    	<td>{{ row[key] }}</td>
 	    	{% endfor %}
 	    </tr>

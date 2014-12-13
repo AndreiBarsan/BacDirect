@@ -1,0 +1,3 @@
+[submodule "python/unidecode"]
+	path = python/unidecode
+	url = https://github.com/iki/unidecode

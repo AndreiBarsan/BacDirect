@@ -9,7 +9,7 @@ import mongo_util
 from mongo_util import *
 from ..config import *
 
-from ..unidecode import unidecode
+from unidecode import unidecode
 
 '''
 Header: [u'Cod unic candidat ', u'Sex', u'Specializare', u'Profil', u'Fileira', u'Forma de \xeenv\u0

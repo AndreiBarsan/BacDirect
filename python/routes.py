@@ -4,7 +4,7 @@ import json
 import time
 from datetime import *
 from flask import render_template, g
-from ..unidecode import unidecode
+from unidecode import unidecode
 
 from data import mongo_util
 from data.mongo_util import *
@@ -22,10 +22,15 @@ interesting_display = {
 	'profil': 'Profil',
 	'filiera': 'Filiera',
 	'noteRecunEa': 'Note Recun? EA',
-	'noteRecunEB': 'Note Recun? EB',
-	'noteRecunEC': 'Note Recun? EC',
-	'noteRecunEC': 'Note Recun? EC',
+	'noteRecunEb': 'Note Recun? EB',
+	'noteRecunEc': 'Note Recun? EC',
+	'noteRecunEd': 'Note Recun? ED',
+	'formaInvatamant': 'Forma Invatamant',
+	'medie': 'Medie'
 }
+
+def prettify_header(header):
+	return [interesting_display[key] for key in header]
 
 def get_db():
 	# g is provided by flask and is thread-safe!
@@ -62,6 +67,7 @@ def index():
 	mongo_data = fetch_table(get_db(), BAC_MONGO_TABLE)
 	sample = [filter_interesting(row) for row in mongo_data.find().limit(1000)]
 	header = get_keys(sample[0])
+	pretty_header = prettify_header(header)
 
 	return render_template('main_stats.html', data = mongo_data,
-		header = header, sample = sample)
+		keys = header, header = pretty_header, sample = sample)
