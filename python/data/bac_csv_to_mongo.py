@@ -25,7 +25,15 @@ ED', u'PUNCTAJ DIGITALE', u'STATUS', u'Medie\r\n']
 
 # If not present, treat as string.
 bac_column_types = {
-	"medie": "float"
+	"medie": "float",
+	"notaEa": "float",
+	"notaEb": "float",
+	"notaEc": "float",
+	"notaEd": "float",
+	"notaContestatieEa": "float",
+	"notaContestatieEb": "float",
+	"notaContestatieEc": "float",
+	"notaContestatieEd": "float",
 }
 
 bac_column_map = {
@@ -42,9 +50,9 @@ bac_column_map = {
 	"Clasa": "clasa",
 	"Subiect ea": "subiectEa",
 	"Subiect eb": "subiectEb",
-	"Limba moderna" : "limbaModerna",
 	"Subiect ec": "subiectEc",
 	"Subiect ed": "subiectEd",
+	"Limba moderna" : "limbaModerna",
 	"Promotie" : "promotie",
 	"NOTE_RECUN_A": "noteRecunA",
 	"NOTE_RECUN_B": "noteRecunB",
@@ -192,7 +200,7 @@ def load_bac(mongo_table, schools):
 	ctx = {
 		'schools': schools
 	}
-	return csv_to_mongo(BAC_DATASET_FILE, "\t", mongo_table, -1, parse_bac_header, parse_bac_line, ctx)
+	return csv_to_mongo(BAC_DATASET_FILE, "\t", mongo_table, 5000, parse_bac_header, parse_bac_line, ctx)
 
 def load_schools(mongo_table):
 	return csv_to_mongo(SCHOOL_DATASET_FILE, ",", mongo_table, -1, parse_school_header, parse_school_line, {})
