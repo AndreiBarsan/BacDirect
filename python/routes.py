@@ -131,23 +131,145 @@ def validSubject(subject):
 	}
 	return subject in validSubjects
 
+def json_error(message):
+	return json.dumps({ 'error': message })
+
+def contestify(subject):
+	index = len("nota")
+	return subject[:index] + "Contestatie" + subject[index:]
+
+# Returns the number of students who took a given exam. Also works with finding 
+# out how many students contested the result of a given exam (for this use
+# `contestify(exam)' instead of `exam').
+def compute_student_count(subject):
+	print "Computing grade count: ", subject, "\n\n\n"
+
+	res = fetch_table(get_db(), BAC_MONGO_TABLE).aggregate([
+		# We only want people who actually took the exam.
+		{
+			"$match": {
+				subject: { '$gt': 1 }
+			}
+		},
+		{
+			"$group": {
+	   			"_id": None, 
+	   			"count": { "$sum": 1 }
+       		}
+		}
+	])['result']
+
+	if len(res) == 0:
+		return 0
+	else:
+		return res[0]['count']
+
+# Returns the number of students who took the given exam.
+@app.route('/api/count_took_subject/<string:subject>', methods = ['GET'])
+def api_count_took_subject(subject):
+	if not validSubject(subject):
+		return json_error('Invalid subject name.')
+
+	return json.dumps(compute_student_count(subject))
+
+# Returns the number of students who took the given exam and contested the
+# result.
+@app.route('/api/count_contested_subject/<string:subject>', methods = ['GET'])
+def api_count_contested_subject(subject):
+	if not validSubject(subject):
+		return json_error('Invalid subject name.')
+
+	return json.dumps(compute_student_count(contestify(subject)))
+
+# Returns the percentage of the students who took the given exam who contested
+# their grade.
 @app.route('/api/percent_contested_by_subject/<string:subject>', methods = ['GET'])
 def api_percent_contested_by_subject(subject):
 	if not validSubject(subject):
-		return json.dumps({'error': 'Invalid subject name.'})
+		return json_error('Invalid subject name.')
 
-	return "NYI"
+	# Number of people who took the exam
+	resTotal = compute_student_count(subject)
+
+	# Number of people who contested the result
+	resContested = compute_student_count(constestify(subject))
+
+	percentContested =  resContested * 1.0 / resTotal * 100.0 
+	return json.dumps({ 'percentContested': percentContested })
+
+# Returns how many students increased/lowered/didn't change their grade by
+# contesting the exam's result.
+def api_test_contested_grade_effect(subject, op):
+	contestedSubject = contestify(subject)
+	res = fetch_table(get_db(), BAC_MONGO_TABLE).aggregate([
+		{
+			"$match": {
+					# Match students who contested their exam result for `subject'.
+					contestedSubject: { '$gt': 1 }
+			}
+		},
+		# And who got a bigger grade as a result of that.
+		# This happens in two stages because Mongo.
+		{
+			"$project": {
+				contestedSubject: 1,
+				'eq': { "$cond": 
+					[ { op: [ '$' + contestedSubject, '$' + subject ] }, 1, 0 ]
+				}
+			}
+		},
+		{
+			"$match": {
+				'eq': 1
+			}
+		},
+		{
+			"$group": {
+	   			"_id": None, 
+	   			"count": { "$sum": 1 }
+       		}
+		}
+		])['result']
+
+	return 0 if len(res) == 0 else res[0]['count']
 
 
+# Returns the number of students who increased their final grade by contesting
+# the exam results.
+@app.route('/api/increased_grade_by_contesting/<string:subject>', methods = ['GET'])
+def api_increased_grade_by_contesting(subject):
+	if not validSubject(subject):
+		return json_error('Invalid subject name.')
+
+	return json.dumps(api_test_contested_grade_effect(subject, '$gt'))
+
+
+# Returns the number of students who lowered their final grade by contesting
+# the exam results.
+@app.route('/api/decreased_grade_by_contesting/<string:subject>', methods = ['GET'])
+def api_decreased_grade_by_contesting(subject):
+	if not validSubject(subject):
+		return json_error('Invalid subject name.')
+
+	return json.dumps(api_test_contested_grade_effect(subject, '$lt'))
+
+# Returns the number of students for whom contesting the exam results had no
+# impact on their final grade.
+@app.route('/api/maintained_grade_by_contesting/<string:subject>', methods = ['GET'])
+def api_maintained_grade_by_contesting(subject):
+	if not validSubject(subject):
+		return json_error('Invalid subject name.')
+
+	return json.dumps(api_test_contested_grade_effect(subject, '$eq'))
 
 @app.route('/api/histogram_by_subject/<string:subject>', methods = ['GET'])
 @app.route('/api/histogram_by_subject/<string:subject>/<float:binSize>', methods = ['GET'])
 def api_histogram_by_subject(subject, binSize = 0.1):
 	if not validSubject(subject) and not validContestedSubject(subject):
-		return json.dumps({'error': 'Invalid subject name.'})
+		return json_error('Invalid subject name.')
 
 	if binSize <= 0.0:
-		return json.dumps({'error': 'Invalid bin size.'})
+		return json_error('Invalid bin size.')
 
 	tbl = fetch_table(get_db(), BAC_MONGO_TABLE)
 	res = tbl.aggregate([

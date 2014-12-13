@@ -11,19 +11,11 @@ from ..config import *
 
 from unidecode import unidecode
 
-'''
-Header: [u'Cod unic candidat ', u'Sex', u'Specializare', u'Profil', u'Fileira', u'Forma de \xeenv\u0
-103\u021b\u0103m\xe2nt', u'Mediu candidat', u'Unitate (SIRUES)', u'Clasa', u'Subiect ea', u'Subiect
-eb', u'Limba modern\u0103', u'Subiect ec', u'Subiect ed', u'Promo\u021bie', u'NOTE_RECUN_A', u'NOTE_
-RECUN_B', u'NOTE_RECUN_C', u'NOTE_RECUN_D', u'NOTE_RECUN_EA', u'NOTE_RECUN_EB', u'NOTE_RECUN_EC', u'
-NOTE_RECUN_ED', u'STATUS_A', u'STATUS_B', u'STATUS_C', u'STATUS_D', u'STATUS_EA', u'STATUS_EB', u'ST
-ATUS_EC', u'STATUS_ED', u'ITA', u'SCRIS_ITC', u'SCRIS_PMS', u'ORAL_PMO', u'ORAL_IO', u'NOTA_EA', u'N
-OTA_EB', u'NOTA_EC', u'NOTA_ED', u'CONTESTATIE_EA', u'NOTA_CONTESTATIE_EA', u'CONTESTATIE_EB', u'NOT
-A_CONTESTATIE_EB', u'CONTESTATIE_EC', u'NOTA_CONTESTATIE_EC', u'CONTESTATIE_ED', u'NOTA_CONTESTATIE_
-ED', u'PUNCTAJ DIGITALE', u'STATUS', u'Medie\r\n']
-'''
-
-# If not present, treat as string.
+# Rules for converting data from the (untyped) input csv file into typed Mongo
+# document fields.  If a rule for a column is not present, treat as string.
+# Note: 'float' also implies that commans inside that field get replaced with 
+# periods, in order to support romanian decimals.
+# TODO(Andrei) Use a proper localization library.
 bac_column_types = {
 	"medie": "float",
 	"notaEa": "float",
@@ -34,6 +26,8 @@ bac_column_types = {
 	"notaContestatieEb": "float",
 	"notaContestatieEc": "float",
 	"notaContestatieEd": "float",
+	"punctajCompetenteDigitale": "int",
+	"id": "int"
 }
 
 bac_column_map = {
@@ -82,11 +76,11 @@ bac_column_map = {
 	"CONTESTATIE_EA": "contestatieEa",
 	"NOTA_CONTESTATIE_EA": "notaContestatieEa",
 	"CONTESTATIE_EB": "contestatieEa",
-	"NOTA_CONTESTATIE_EB": "notaContestatieEa",
+	"NOTA_CONTESTATIE_EB": "notaContestatieEb",
 	"CONTESTATIE_EC": "contestatieEa",
-	"NOTA_CONTESTATIE_EC": "notaContestatieEa",
+	"NOTA_CONTESTATIE_EC": "notaContestatieEc",
 	"CONTESTATIE_ED": "contestatieEa",
-	"NOTA_CONTESTATIE_ED": "notaContestatieEa",
+	"NOTA_CONTESTATIE_ED": "notaContestatieEd",
 	"PUNCTAJ DIGITALE": "punctajCompetenteDigitale",
 	"STATUS": "status",
 	"Medie": "medie"
@@ -149,11 +143,19 @@ def parse_bac_line(header, line, separator, context):
 		obj['judet'] = school['judet']
 
 	for el in bac_column_types:
-		if(bac_column_types[el] == 'float'):
+		op = bac_column_types[el]
+		if(op == 'float'):
 			try:
 				obj[el] = float(obj[el].replace(",", "."))
 			except:
-				obj[el] = 0
+				obj[el] = -1
+		elif(op == 'int'):
+			try:
+				obj[el] = int(obj[el])
+			except:
+				obj[el] = -1
+		else:
+			raise Exception('Unknown type conversion operation: [' + op + '].')
 
 	return obj
 
@@ -200,7 +202,7 @@ def load_bac(mongo_table, schools):
 	ctx = {
 		'schools': schools
 	}
-	return csv_to_mongo(BAC_DATASET_FILE, "\t", mongo_table, 5000, parse_bac_header, parse_bac_line, ctx)
+	return csv_to_mongo(BAC_DATASET_FILE, "\t", mongo_table, 50000, parse_bac_header, parse_bac_line, ctx)
 
 def load_schools(mongo_table):
 	return csv_to_mongo(SCHOOL_DATASET_FILE, ",", mongo_table, -1, parse_school_header, parse_school_line, {})
