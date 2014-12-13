@@ -31,7 +31,9 @@ bac_column_map = {
 	"Fileira": "filiera",
 	"Forma de invatamant": "formaInvatamant",
 	"Mediu candidat": "mediuCandidat",
-	"Unitate (SIRUES)": "codSIRUES",
+	# Aceasta coloana **NU** contine codul SIRUES al institutiei, ci doar codul ei.
+	# Codul unei institutii si codul sau SIRUES sunt doua lucruri diferite.
+	"Unitate (SIRUES)": "codUnitate",
 	"Clasa": "clasa",
 	"Subiect ea": "subiectEa",
 	"Subiect eb": "subiectEb",
@@ -79,9 +81,8 @@ bac_column_map = {
 
 school_column_map = {
 	# We have to go deeper!
-	"\"Cod SIRUES\"": "codSIRUES",
-	"\"Localitate\"": "localitate",
-	"\"Judet\"": "judet"
+	"Nr.": "codUnitate",
+	"Judet": "judet"
 }
 
 def clean_col(col_name, name_map):
@@ -106,18 +107,37 @@ def parse_school_header(line, separator):
 	return parse_header(line, school_column_map, separator)
 
 def parse_line(header, line, separator):
-	# Herp-derp, the CSV is actually a TSV
+	# Herp-derp, the CSV is sometimes actually a TSV.  Gotta love consistency, yo.
 	fields = [el.strip() for el in line.split(separator)]
 	obj = {}
 	
+	if(len(fields) < len(header)):
+		print "WARNING, field possibly malformed. Field hat", len(fields), "elements, header had", len(header)
+		return None
+
 	for i in range(len(header)):
 		obj[header[i]] = fields[i]
+
 	return obj	
+
+def parse_school_line(header, line, separator, context):
+	obj = parse_line(header, line, separator)
+	return obj
+
+def parse_bac_line(header, line, separator, context):
+	obj = parse_line(header, line, separator)	
+	schools = context['schools']
+	school = schools.find_one({'codUnitate': obj['codUnitate']})
+	if school is None:
+		println("Warning! Could not find schoold with ID [" + obj['codUnitate'])
+	else:
+		obj['school'] = school
+	return obj
 
 # Loads the given file into 'mongo_table'.  Set limit to -1 to load everything.
 # 'parse_header' and 'parse_line' are meant to convert a line string to an array
 # of cells (while also potentially doing stuff like normalization and cleanup).
-def csv_to_mongo(filename, separator, mongo_table, limit, parse_header, parse_line):
+def csv_to_mongo(filename, separator, mongo_table, limit, parse_header_fn, parse_line_fn, context):
 	input = codecs.open(filename, 'r', BAC_DATASET_ENCODING)
 	
 	if(mongo_table.count() > 100):
@@ -135,12 +155,14 @@ def csv_to_mongo(filename, separator, mongo_table, limit, parse_header, parse_li
 	for line in input:
 		if(lineIndex == 0):
 			print "Reading header..."
-			header = parse_header(line, separator)
+			header = parse_header_fn(line, separator)
 			#for f in header:
 			#	print unicode(f).encode('utf-8')
 			print "Header end.", len(header), "columns. Reading rows."
 		else:
-			data.append(parse_line(header, line, separator))
+			obj = parse_line_fn(header, line, separator, context)
+			if(obj is not None):
+				data.append(obj)
 			
 
 		lineIndex += 1
@@ -151,11 +173,14 @@ def csv_to_mongo(filename, separator, mongo_table, limit, parse_header, parse_li
 	insert_data(mongo_table, data)
 	print "Done loading ", mongo_table.name, "! Our mongo table has", mongo_table.count(), "entries."
 
-def load_bac(mongo_table):
-	return csv_to_mongo(BAC_DATASET_FILE, "\t", mongo_table, 10000, parse_bac_header, parse_line)
+def load_bac(mongo_table, schools):
+	ctx = {
+		'schools': schools
+	}
+	return csv_to_mongo(BAC_DATASET_FILE, "\t", mongo_table, 10000, parse_bac_header, parse_bac_line, ctx)
 
-def load_scoli(mongo_table):
-	return csv_to_mongo(SCHOOL_DATASET_FILE, ",", mongo_table, 10000, parse_school_header, parse_line)
+def load_schools(mongo_table):
+	return csv_to_mongo(SCHOOL_DATASET_FILE, ",", mongo_table, -1, parse_school_header, parse_school_line, {})
 
 def main():
 	mongoc = mongo_util.create_client()
@@ -163,7 +188,10 @@ def main():
 	mongo_table_bac = fetch_table(mongodb, BAC_MONGO_TABLE)
 	mongo_table_school = fetch_table(mongodb, SCHOOL_MONGO_TABLE)
 
-	load_bac(mongo_table_bac)	
-	load_scoli(mongo_table_school)
+	print "Starting to load school data"
+	load_schools(mongo_table_school)
+
+	print "Starting to load exam result data"
+	load_bac(mongo_table_bac, mongo_table_school)
 
 main()

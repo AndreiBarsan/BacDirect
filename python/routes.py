@@ -65,7 +65,8 @@ def api_get_data_size():
 
 @app.route('/api/get_data_by_county')
 def api_get_data_by_county():
-	return "NYI"
+	bac_table = fetch_table(get_db(), BAC_MONGO_TABLE)
+	school_table = fetch_table(get_db(), SCHOOL_MONGO_TABLE)
 
 @app.route('/')
 def index():
