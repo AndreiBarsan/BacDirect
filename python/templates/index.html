@@ -2,6 +2,21 @@
 <html lang="ro">
 
 <head>
+    <script type="text/javascript"
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD6c5kan2oNl3WCd1ZiCodgGPndSA-6eSM">
+    </script>
+    
+    <script type="text/javascript">
+      function initialize() {
+        var mapOptions = {
+          center: { lat: -34.397, lng: 150.644},
+          zoom: 8
+        };
+        
+        var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+      }
+      google.maps.event.addDomListener(window, 'load', initialize);
+    </script>
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -74,12 +89,16 @@
             </div>
         </div>
         <!-- /.row -->
-        <div class="row">
+        <div class="row"> 
             <div class="col-lg-6 text-center">
                 {% block body %} {% endblock %}
             </div>
-            <div class "col-lg-6" ng-controller='MainCtrl'>  
+            <div class="col-lg-6" ng-controller='MainCtrl'>  
               I don't {[{a}]}
+            </div>
+        </div>
+        <div class="row"> 
+            <div class="col-lg-12" id="map-canvas">
             </div>
         </div>
         <!-- /.row -->

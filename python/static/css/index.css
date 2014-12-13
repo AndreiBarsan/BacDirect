@@ -9,6 +9,10 @@
   }
 }
 
+#map-canvas {
+  min-height: 500px;
+}
+
 .navbar {
   /* min-height: 64px; */
 }
