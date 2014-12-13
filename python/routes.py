@@ -5,6 +5,8 @@ import time
 from datetime import *
 from flask import render_template, g
 from unidecode import unidecode
+from bson import Code
+from bson.son import SON
 
 from data import mongo_util
 from data.mongo_util import *
@@ -14,7 +16,7 @@ from server import app
 
 interesting = ['id', 'specializare', 'profil', 'filiera',
 				'noteRecunEa', 'noteRecunEb', 'noteRecunEc', 'noteRecunEd',
-				'formaInvatamant', 'medie', 'unitate']
+				'formaInvatamant', 'medie', 'codUnitate', 'school.judet', 'status']
 
 interesting_display = {
 	'id': 'ID',
@@ -27,7 +29,9 @@ interesting_display = {
 	'noteRecunEd': 'Note Recun? ED',
 	'formaInvatamant': 'Forma Invatamant',
 	'medie': 'Medie',
-	'unitate': 'Unitate'
+	'codUnitate': 'Cod Unitate Scolara',
+	'judet': 'Judet',
+	'status': 'Statut'
 }
 
 def prettify_header(header):
@@ -41,11 +45,23 @@ def get_db():
 
 	return g.mongo
 
+def nestedGrab(obj, bitsLeft):
+	if(len(bitsLeft) == 1):
+		return obj[bitsLeft[0]]
+	else:
+		return nestedGrab(obj[bitsLeft[0]], bitsLeft[1:])
+
+
 def filter_interesting(row):
 	clean = {}
 	for key in interesting:
+		# Hack.
+		if key.find(".") > 0:
+			bits = key.split(".")
+			clean[key] = nestedGrab(row, bits)
 		# use `unidecode(row[key])' if Python starts complaining about UTF
-		clean[key] = row[key]
+		else:
+			clean[key] = row[key]
 		
 	return clean
 
@@ -66,7 +82,21 @@ def api_get_data_size():
 @app.route('/api/get_data_by_county')
 def api_get_data_by_county():
 	bac_table = fetch_table(get_db(), BAC_MONGO_TABLE)
-	school_table = fetch_table(get_db(), SCHOOL_MONGO_TABLE)
+	grp = bac_table.aggregate([
+		{
+			"$match" : {
+				"medie": { "$gt": -1 }
+			}
+		},
+		{
+			"$group" : {
+				"_id": "$judet",
+				"medie" : { "$avg" : "$medie" },
+			}
+		},
+	])
+
+	return json.dumps(grp)
 
 @app.route('/')
 def index():

@@ -23,6 +23,11 @@ A_CONTESTATIE_EB', u'CONTESTATIE_EC', u'NOTA_CONTESTATIE_EC', u'CONTESTATIE_ED',
 ED', u'PUNCTAJ DIGITALE', u'STATUS', u'Medie\r\n']
 '''
 
+# If not present, treat as string.
+bac_column_types = {
+	"medie": "float"
+}
+
 bac_column_map = {
 	"Cod unic candidat": "id",
 	"Sex": "sex",
@@ -129,9 +134,19 @@ def parse_bac_line(header, line, separator, context):
 	schools = context['schools']
 	school = schools.find_one({'codUnitate': obj['codUnitate']})
 	if school is None:
-		println("Warning! Could not find schoold with ID [" + obj['codUnitate'])
+		println("Warning! Could not find schoold with ID [" + obj['codUnitate']) + "]."
 	else:
 		obj['school'] = school
+		# Makes grouping easier!
+		obj['judet'] = school['judet']
+
+	for el in bac_column_types:
+		if(bac_column_types[el] == 'float'):
+			try:
+				obj[el] = float(obj[el].replace(",", "."))
+			except:
+				obj[el] = 0
+
 	return obj
 
 # Loads the given file into 'mongo_table'.  Set limit to -1 to load everything.
@@ -177,7 +192,7 @@ def load_bac(mongo_table, schools):
 	ctx = {
 		'schools': schools
 	}
-	return csv_to_mongo(BAC_DATASET_FILE, "\t", mongo_table, 10000, parse_bac_header, parse_bac_line, ctx)
+	return csv_to_mongo(BAC_DATASET_FILE, "\t", mongo_table, -1, parse_bac_header, parse_bac_line, ctx)
 
 def load_schools(mongo_table):
 	return csv_to_mongo(SCHOOL_DATASET_FILE, ",", mongo_table, -1, parse_school_header, parse_school_line, {})
