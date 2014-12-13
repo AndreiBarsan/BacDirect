@@ -23,7 +23,7 @@ A_CONTESTATIE_EB', u'CONTESTATIE_EC', u'NOTA_CONTESTATIE_EC', u'CONTESTATIE_ED',
 ED', u'PUNCTAJ DIGITALE', u'STATUS', u'Medie\r\n']
 '''
 
-column_map = {
+bac_column_map = {
 	"Cod unic candidat": "id",
 	"Sex": "sex",
 	"Specializare": "specializare",
@@ -31,7 +31,7 @@ column_map = {
 	"Fileira": "filiera",
 	"Forma de invatamant": "formaInvatamant",
 	"Mediu candidat": "mediuCandidat",
-	"Unitate (SIRUES)": "unitate",
+	"Unitate (SIRUES)": "codSIRUES",
 	"Clasa": "clasa",
 	"Subiect ea": "subiectEa",
 	"Subiect eb": "subiectEb",
@@ -77,53 +77,70 @@ column_map = {
 	"Medie": "medie"
 }
 
-def parse_line(header, line):
+school_column_map = {
+	# We have to go deeper!
+	"\"Cod SIRUES\"": "codSIRUES",
+	"\"Localitate\"": "localitate",
+	"\"Judet\"": "judet"
+}
+
+def clean_col(col_name, name_map):
+	return name_map[unidecode(col_name)]
+
+def parse_header(line, name_map, separator):
+	cols = [el.strip() for el in line.split(separator)]
+	clean_cols = []
+
+	for col in cols:
+		if unidecode(col) in name_map:
+			clean_cols.append(clean_col(col, name_map))
+		else:
+			print "Warning: no mapping found for column [", unidecode(col), "]"
+
+	return clean_cols
+
+def parse_bac_header(line, separator):
+	return parse_header(line, bac_column_map, separator)
+
+def parse_school_header(line, separator):
+	return parse_header(line, school_column_map, separator)
+
+def parse_line(header, line, separator):
 	# Herp-derp, the CSV is actually a TSV
-	fields = [el.strip() for el in line.split('\t')]
+	fields = [el.strip() for el in line.split(separator)]
 	obj = {}
-	assert len(header) == len(fields)
+	
 	for i in range(len(header)):
-		cleanCol = column_map[header[i]]
-		obj[cleanCol] = fields[i]
+		obj[header[i]] = fields[i]
 	return obj	
 
-def clean_col(col):
-	return unidecode(col)
-
-def parse_header(line):
-	cols = [el.strip() for el in line.split('\t')]
-	return [clean_col(col) for col in cols]
-
-def main():
-	input = codecs.open(BAC_DATASET_FILE, 'r', BAC_DATASET_ENCODING)
-	output = codecs.open("test.txt", "w", BAC_DATASET_ENCODING)
-	mongoc = mongo_util.create_client()
-	mongodb = fetch_db(mongoc, BAC_MONGO_DB)
-	mongotbl = fetch_table(mongodb, BAC_MONGO_TABLE)
-
-	if(mongotbl.count() > 100):
-		answer = raw_input("Table already contains > 10k rows. Really reset? y/n\n")
+# Loads the given file into 'mongo_table'.  Set limit to -1 to load everything.
+# 'parse_header' and 'parse_line' are meant to convert a line string to an array
+# of cells (while also potentially doing stuff like normalization and cleanup).
+def csv_to_mongo(filename, separator, mongo_table, limit, parse_header, parse_line):
+	input = codecs.open(filename, 'r', BAC_DATASET_ENCODING)
+	
+	if(mongo_table.count() > 100):
+		answer = raw_input("Table (" + str(mongo_table.name) + ") already contains > 10k rows. Really reset? y/n\n")
 		if(answer != 'y'):
 			print "Aborting."
 			return -1
 
 	print "Cleaning our old table..."
-	mongotbl.remove()
+	mongo_table.remove()
 
-	limit = 10000
 	data = []
 	print "Starting read. Will limit to", limit, "rows (-1 means everything)."
 	lineIndex = 0
 	for line in input:
 		if(lineIndex == 0):
-			header = parse_header(line)
-			# TODO(andrei) Setup mongo table structure here dynamically, maybe?
-			print "Read header:"
-			for f in header:
-				print unicode(f).encode('utf-8')
+			print "Reading header..."
+			header = parse_header(line, separator)
+			#for f in header:
+			#	print unicode(f).encode('utf-8')
 			print "Header end.", len(header), "columns. Reading rows."
 		else:
-			data.append(parse_line(header, line))
+			data.append(parse_line(header, line, separator))
 			
 
 		lineIndex += 1
@@ -131,7 +148,22 @@ def main():
 			break
 
 	print "Performing mongo insert!"
-	insert_data(mongotbl, data)
-	print "Done! Our mongo table has", mongotbl.count(), "entries."
+	insert_data(mongo_table, data)
+	print "Done loading ", mongo_table.name, "! Our mongo table has", mongo_table.count(), "entries."
+
+def load_bac(mongo_table):
+	return csv_to_mongo(BAC_DATASET_FILE, "\t", mongo_table, 10000, parse_bac_header, parse_line)
+
+def load_scoli(mongo_table):
+	return csv_to_mongo(SCHOOL_DATASET_FILE, ",", mongo_table, 10000, parse_school_header, parse_line)
+
+def main():
+	mongoc = mongo_util.create_client()
+	mongodb = fetch_db(mongoc, BAC_MONGO_DB)
+	mongo_table_bac = fetch_table(mongodb, BAC_MONGO_TABLE)
+	mongo_table_school = fetch_table(mongodb, SCHOOL_MONGO_TABLE)
+
+	load_bac(mongo_table_bac)	
+	load_scoli(mongo_table_school)
 
 main()
