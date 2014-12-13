@@ -18,23 +18,41 @@ interesting = ['Cod unic candidat', 'Specializare', 'Profil', 'Filiera',
 				'NOTE_RECUN_EC',
 				'NOTA_ED', 'Forma de invatamant']
 
+def get_db():
+	# g is provided by flask and is thread-safe!
+	global g
+	if not hasattr(g, 'mongo'):
+		g.mongo = mongo_util.fetch_db(create_client(), BAC_MONGO_DB)
+
+	return g.mongo
+
 def prettify(row):
 	clean = {}
 	for key in row:
 		if key in interesting:
-			clean[key] = unidecode(row[key])
-			# clean[key] = unicode(row[key]).encode(BAC_DATASET_ENCODING)
+			# use `unidecode(row[key])' if Python starts complaining about UTF
+			clean[key] = row[key]
 	return clean
 
 def get_keys(doc):
 	return [key for key in doc]
 
+@app.route('/api/get_data')
+def api_get_data():
+	mongo_data = fetch_table(get_db(), BAC_MONGO_TABLE)
+	data = [prettify(row) for row in mongo_data.find().limit(100)]
+	return json.dumps(data)
+
+@app.route('/api/get_data_size')
+def api_get_data_size():
+	mongo_data = fetch_table(get_db(), BAC_MONGO_TABLE)
+	return json.dumps(mongo_data.size())
+
 @app.route('/')
-def show_notifications():
-	mongo_data = fetch_table(fetch_db(create_client(), BAC_MONGO_DB), BAC_MONGO_TABLE)
+def index():
+	mongo_data = fetch_table(get_db(), BAC_MONGO_TABLE)
 	sample = [prettify(row) for row in mongo_data.find().limit(100)]
 	header = get_keys(sample[0])
 
-	return json.dumps(sample)
-	#return render_template('main_stats.html', data = mongo_data,
-#		header = header, sample = sample)
+	return render_template('main_stats.html', data = mongo_data,
+		header = header, sample = sample)
