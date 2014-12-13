@@ -71,3 +71,7 @@ def index():
 
 	return render_template('main_stats.html', data = mongo_data,
 		keys = header, header = pretty_header, sample = sample)
+
+@app.route('/app')
+def app_index():
+    return render_template('index.html')
