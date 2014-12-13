@@ -16,8 +16,6 @@
     <!-- Custom CSS -->
     <link href="{{ url_for('static', filename='css/index.css')}}" rel="stylesheet">
     <!-- Custom JS --> 
-    <script src="{{ url_for('static', filename='js/index.js')}}"></script>
-    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.5/angular.min.js"></script>
     
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -29,8 +27,7 @@
     {% block customhead %} {% endblock %}
 </head>
 
-<body>
-
+<body ng-app='MyApp' >
     <!-- Navigation -->
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
         <div class="container">
@@ -65,10 +62,9 @@
 
     <!-- Page Content -->
     <div class="container">
-
         <div class="row">
             <div class="col-lg-12 text-center">
-                <h1>BacDirect: Vizualizare Date Bac</h1>
+              <h1>BacDirect: Vizualizare Date Bac {{a}}</h1>
                 {% for message, category in get_flashed_messages(with_categories = True) %}
                 <div class="alert {{ category }} alert-dismissable">
                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
@@ -79,12 +75,14 @@
         </div>
         <!-- /.row -->
         <div class="row">
-            <div class="col-lg-12 text-center">
+            <div class="col-lg-6 text-center">
                 {% block body %} {% endblock %}
+            </div>
+            <div class "col-lg-6" ng-controller='MainCtrl'>  
+              I don't {[{a}]}
             </div>
         </div>
         <!-- /.row -->
-
     </div>
     <!-- /.container -->
 
@@ -93,6 +91,9 @@
     <!-- Bootstrap Core JavaScript -->
     <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
 	  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.5/angular.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js')}}" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='js/ctrl.js')}}" type="text/javascript"></script>
 </body>
 
 </html>
