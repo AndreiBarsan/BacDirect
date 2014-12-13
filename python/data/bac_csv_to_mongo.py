@@ -7,10 +7,9 @@ import json
 
 import mongo_util
 from mongo_util import *
+from ..config import *
 
-BAC_DATASET_FILE = "BacInscriere2014_sesiunea_I_0.csv"
-BAC_DATASET_ENCODING = "utf-8"
-BAC_MONGO_TABLE = "bac_table"
+from unidecode import unidecode
 
 '''
 Header: [u'Cod unic candidat ', u'Sex', u'Specializare', u'Profil', u'Fileira', u'Forma de \xeenv\u0
@@ -23,13 +22,15 @@ OTA_EB', u'NOTA_EC', u'NOTA_ED', u'CONTESTATIE_EA', u'NOTA_CONTESTATIE_EA', u'CO
 A_CONTESTATIE_EB', u'CONTESTATIE_EC', u'NOTA_CONTESTATIE_EC', u'CONTESTATIE_ED', u'NOTA_CONTESTATIE_
 ED', u'PUNCTAJ DIGITALE', u'STATUS', u'Medie\r\n']
 '''
-interesting_fields = [
-	'Cod unic candidat',
-	'Specializare',
-	'Profil',
-	'Filiera'
-]
 
+# TODO(andrei) Nume consecvente de coloane.  Ori toate cu spatii, ori toate cu
+# underscore.  Ori toate caps lock, ori toate cu caractere mici etc.
+# Not used at the moment.
+column_map = {
+	"Forma de \xeenv\u0103\u021b\u0103m\xe2nt": "FORMA_INVATAMANT",
+	"Promo\u021bie" : "PROMOTIE",
+	"Limba modern\u0103" : "LIMBA_MODERNA",
+}
 
 def parse_line(header, line):
 	# Herp-derp, the CSV is actually a TSV
@@ -40,27 +41,30 @@ def parse_line(header, line):
 		obj[header[i]] = fields[i]
 	return obj	
 
+def clean_col(col):
+	return unidecode(col)
+
 def parse_header(line):
-	return line.split('\t')
+	cols = line.split('\t')
+	return [clean_col(col) for col in cols]
 
 def main():
 	input = codecs.open(BAC_DATASET_FILE, 'r', BAC_DATASET_ENCODING)
 	output = codecs.open("test.txt", "w", BAC_DATASET_ENCODING)
 	mongoc = mongo_util.create_client()
-	mongodb = fetch_db(mongoc, "bac_db")
+	mongodb = fetch_db(mongoc, BAC_MONGO_DB)
 	mongotbl = fetch_table(mongodb, BAC_MONGO_TABLE)
 
-	if(mongotbl.count() > 10000):
+	if(mongotbl.count() > 100):
 		answer = raw_input("Table already contains > 10k rows. Really reset? y/n\n")
 		if(answer != 'y'):
 			print "Aborting."
 			return -1
 
-	return
 	print "Cleaning our old table..."
 	mongotbl.remove()
 
-	limit = -1
+	limit = 10000
 	data = []
 	print "Starting read. Will limit to", limit, "rows (-1 means everything)."
 	lineIndex = 0

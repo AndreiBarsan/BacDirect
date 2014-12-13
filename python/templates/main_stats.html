@@ -8,7 +8,22 @@
 {% endblock %}
 
 {% block body %}
-
-    <p class="lead">Woo heatmap!</p>
+	<p class="lead">Baza de date contine {{ data.count() }} câmpuri.</p>
+	<table class="table table-striped table-hover table-condensed table-border">
+		<tr>
+			{% for h in header %}
+			<th>{{ h }}</th>
+			{% endfor %}
+		</tr>
+		
+	    {% for row in sample %}
+	    <tr>
+	    	{% for key in header %}
+	    	<td>{{ row[key] }}</td>
+	    	{% endfor %}
+	    </tr>
+	    {% endfor %}
+	</table>
+    <div id="heatmap"></div>
 
 {% endblock %}
