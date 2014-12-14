@@ -82,15 +82,22 @@ def getFancyName(subject):
 	# TODO(ioan) Cache this shit.  It's embarrassing.
 	# TODO(ioan) Easy name list: 'Romana', 'Mate' etc.
 	validSubjects = [
+		# subiectEa
 		u"Limba română (UMAN)",
 		u"Limba română (REAL)",
+
+		# subiectEb
+
+		# subiectEc
 		u"Matematică MATE-INFO",
 		u"Matematică TEHN",
 		u"Matematică ST-NAT",
+		u"Istorie",
+
+		#  subiectEd
 		u"Biologie vegetală și animală",
 		u"Anatomie și fiziologie umană, genetică și ecologie umană",
 		u"Geografie",
-		u"Istorie",
 		u"Economie",
 		u"Informatică MI C/C++",
 		u"Informatică MI Pascal",
@@ -100,6 +107,8 @@ def getFancyName(subject):
 		u"Chimie anorganică TEH Nivel I/II",
 		u"Chimie organică TEO",
 		u"Chimie organică TEH"
+		# TODO(ioan) Nume corecte pentru: filosofie, logica si argumentare,
+		# psihologie si sociologie, limbi materne.
 	]
 	validSubjectMap = {}
 	for x in validSubjects:
@@ -116,7 +125,7 @@ def json_error(message):
 
 # Return the name of the column specifying the subject of this exam.
 # Example: `notaEa' -> `subiectEa'.
-def getSubjectColumn(exam):
+def get_subject_column(exam):
 	return "subiect" + exam[-2:]
 
 # Needed for jsonifying mongo objectids.  They're not usually needed, but it

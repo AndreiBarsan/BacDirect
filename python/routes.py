@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+# TODO(ioan) Remove all tab indents so that the codebase is consistent.
+# TODO(ioan) Ensure everyone is using expandtab with 4-space tabs.
+
 from datetime import *
 import json
 import time
@@ -55,7 +58,7 @@ def api_get_data_by_county():
 		},
 	])
 
-	return json_response({'message': 'Not implemented. Mismatch between datasets.'})
+	return json_error('Not implemented. Mismatch between datasets.')
 
 # Returns the number of students who took a given exam. Also works with finding 
 # out how many students contested the result of a given exam (for this use
@@ -146,7 +149,12 @@ def api_maintained_grade_by_contesting(exam):
 # Return the grade distribution (as a histogram) for the given exam and subject
 # combination.  Example: fourth exam (`notaEa'), computer science subject
 # (`informatica').
-# Note: use '*' to ignore the particular subject and/or exam.
+# Note: use `*' to ignore the particular subject and/or exam.
+# Note: ignoring the exam but not the subject is currently unsupported. Reason:
+# 		We would need to figure out what exam the subject refers to for each
+#		individual student.  TODO(ioan) This can be done with a lookup table;
+#		There are not subjects that can occur on different exam days.
+# TODO(ioan) Move to `bac_stats.py'.
 @app.route('/api/histogram_by_subject', methods = ['GET'])
 @app.route('/api/histogram_by_subject/<int:binSize>', methods = ['GET'])
 @app.route('/api/histogram_by_subject/<float:binSize>', methods = ['GET'])
@@ -158,6 +166,9 @@ def api_histogram_by_subject(exam = '*', subject = '*', binSize = 0.1):
 
 	if binSize <= 0.0:
 		return json_error('Invalid bin size.')
+
+	if subject != '*' and exam == '*':
+		return json_error('Cannot aggregate based on just the subject.')
 
 	if exam != "*":
 		if not validExam(exam) and not validContestedExam(exam):
@@ -177,29 +188,38 @@ def api_histogram_by_subject(exam = '*', subject = '*', binSize = 0.1):
 	    })
 	else:
 		# We don't care about an exam in particular.  Evaluate the final
-		# average field instead (`medie').  This is done after the next block
-		# so as not to interleave `match' and `project' stages.
-		pipeline.append({
-			"$match": {
-				"medie": { "$gt": 1 }
-			}
-		})
+		# average field instead (`medie'), but only if the user also deosn't want
+		# to search by subject.  This is done after the next block so as not to
+		# interleave `match' and `project' stages.
+		if subject == '*':
+			pipeline.append({
+				"$match": {
+					"medie": { "$gt": 1 }
+				}
+			})
 
 	if subject != "*":
 		# Also filter on subject name.
-		subjectName = getFancyName(subject)
-		if subjectName is None:
-			return json_error('Invalid subject name. (Try using \'*\' if the '+
+		subject_name = getFancyName(subject)
+		if subject_name is None:
+			return json_error('Invalid subject name. (Try using \'*\' if the ' +
 				'subject itself doesn\'t matter.)')
 
-		examSubject = getSubjectColumn(exam)
-		pipeline.append({
+		exam_subject = get_subject_column(exam)
+		subject_matcher =  {
 			"$match": {
-				examSubject: subjectName
+				exam_subject: subject_name
 			}
-		})
+		}
 
-	if exam == '*':
+		# We need to merge multiple conditions.  Apparently having multiple
+		# matches in a row doesn't work.  We need to ``and'' them together.
+		if '$match' in pipeline[0]:
+			pipeline[0] = merge_matchers(pipeline[0], subject_matcher)
+		else:
+			pipeline.append(subject_matcher)
+
+	if exam == '*' and subject == '*':
 		pipeline.append({
 			"$project": {
 	    		"gradeLowerBound": {
@@ -207,7 +227,6 @@ def api_histogram_by_subject(exam = '*', subject = '*', binSize = 0.1):
 	    		}
 	    	}
 	    })
-
 	
 	pipeline.append({
    		"$group": {
@@ -224,6 +243,19 @@ def api_histogram_by_subject(exam = '*', subject = '*', binSize = 0.1):
 	tbl = fetch_table(get_db(), BAC_MONGO_TABLE)
 	res = tbl.aggregate(pipeline)
 
+	return json_response(res['result'])
+
+@app.route('/api/limba_moderna')
+def api_limba_moderna():
+	tbl = fetch_table(get_db(), BAC_MONGO_TABLE)
+	res = tbl.aggregate({
+		"$group": {
+			"_id": "$limbaModerna",
+			"count": { "$sum": 1 }
+		}
+	})
+	for r in res['result']:
+		print unicode(r)#.encode('UTF-8')
 	return json_response(res['result'])
 
 # Handles the initial loading of the one-page visualization app.

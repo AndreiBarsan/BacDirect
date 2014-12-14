@@ -21,3 +21,12 @@ def get_bac_data(db):
 def insert_data(table, data):
 	id = table.insert(data)
 	return id
+
+def merge_matchers(m1, m2):
+    cnd1 = m1['$match']
+    cnd2 = m2['$match']
+    return {
+        '$match': {
+            '$and': [ cnd1, cnd2 ]
+        }
+    }
