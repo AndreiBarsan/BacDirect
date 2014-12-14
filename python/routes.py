@@ -147,16 +147,43 @@ def api_maintained_grade_by_contesting(exam):
 # combination.  Example: fourth exam (`notaEa'), computer science subject
 # (`informatica').
 # Note: use '*' to ignore the particular subject and/or exam.
+@app.route('/api/histogram_by_subject', methods = ['GET'])
+@app.route('/api/histogram_by_subject/<int:binSize>', methods = ['GET'])
+@app.route('/api/histogram_by_subject/<float:binSize>', methods = ['GET'])
 @app.route('/api/histogram_by_subject/<string:exam>/<string:subject>', methods = ['GET'])
+@app.route('/api/histogram_by_subject/<string:exam>/<string:subject>/<int:binSize>', methods = ['GET'])
 @app.route('/api/histogram_by_subject/<string:exam>/<string:subject>/<float:binSize>', methods = ['GET'])
-def api_histogram_by_subject(exam, subject, binSize = 0.1):
-	
+def api_histogram_by_subject(exam = '*', subject = '*', binSize = 0.1):
+	pipeline = []
+
+	if binSize <= 0.0:
+		return json_error('Invalid bin size.')
+
 	if exam != "*":
 		if not validExam(exam) and not validContestedExam(exam):
 			return json_error('Invalid exam name.')
 
-	if binSize <= 0.0:
-		return json_error('Invalid bin size.')
+		pipeline.append({
+			"$match": {
+				exam: { "$gt": 1 }
+			}
+		})
+		pipeline.append({
+			"$project": {
+	    		"gradeLowerBound": {
+	    			"$subtract": ["$" + exam, { "$mod": [ "$" + exam, binSize] } ]
+	    		}
+	    	}
+	    })
+	else:
+		# We don't care about an exam in particular.  Evaluate the final
+		# average field instead (`medie').  This is done after the next block
+		# so as not to interleave `match' and `project' stages.
+		pipeline.append({
+			"$match": {
+				"medie": { "$gt": 1 }
+			}
+		})
 
 	if subject != "*":
 		# Also filter on subject name.
@@ -166,44 +193,36 @@ def api_histogram_by_subject(exam, subject, binSize = 0.1):
 				'subject itself doesn\'t matter.)')
 
 		examSubject = getSubjectColumn(exam)
-		matcher = {
+		pipeline.append({
 			"$match": {
-				exam: { '$gt': 1 },
 				examSubject: subjectName
 			}
+		})
+
+	if exam == '*':
+		pipeline.append({
+			"$project": {
+	    		"gradeLowerBound": {
+	    			"$subtract": ["$medie", { "$mod": [ "$medie", binSize] } ]
+	    		}
+	    	}
+	    })
+
+	
+	pipeline.append({
+   		"$group": {
+    		"_id": "$gradeLowerBound", 
+       		"count": { "$sum": 1 }
+	    }
+	})
+	pipeline.append({
+		"$sort": {
+			"_id": 1
 		}
-	else:
-		# We don't care about the particular subject, so we look at the exam in
-		# general.  (But we still don't want to count students who didn't take
-		# the exam at all!)
-		matcher = {
-			"$match": {
-				exam: { '$gt': 1 },
-			}
-		}
+	})
 	
 	tbl = fetch_table(get_db(), BAC_MONGO_TABLE)
-	res = tbl.aggregate([
-		matcher,
-		{
-			"$project": {
-        		"gradeLowerBound": {
-        			"$subtract": ["$" + exam, { "$mod": [ "$" + exam, binSize] } ]
-        		}
-        	}
-        },
-   		{
-   			"$group": {
-       			"_id": "$gradeLowerBound", 
-       			"count": { "$sum": 1 }
-	       	}
-		},
-		{
-			"$sort": {
-				"_id": 1
-			}
-		}
-	])
+	res = tbl.aggregate(pipeline)
 
 	return json_response(res['result'])
 
