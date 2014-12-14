@@ -256,6 +256,28 @@ def api_limba_moderna():
 	})
 	return json_response(res['result'])
 
+# Returns the existing study branches (ro: filiere) and the number of students
+# from each of them.
+@app.route('/api/get_branches')
+def api_get_branches():
+	tbl = fetch_table(get_db(), BAC_MONGO_TABLE)
+	res = tbl.aggregate([{
+				"$group": {
+					"_id": { "filiera": "$filiera" },
+					"count": { "$sum": 1 }
+				},
+			},
+			{
+				"$project": {
+					"filiera": "$_id.filiera",
+					"count": True,
+					"_id": False
+				}
+			}
+		])
+
+	return json_response(res['result'])
+
 # Returns a nested list with the following levels:
 #	1. the branches (`filiere')
 #	2. the study profile (`profile')
@@ -267,43 +289,54 @@ def api_profile_distribution():
 	res = tbl.aggregate([{
 		"$group": {
 			"_id": {
-				"filiera": "$filiera",
-				"profil": "$profil",
-				"specializare": "$specializare"
+				"branch": "$filiera",
+				"profile": "$profil",
+				"specialization": "$specializare"
 			},
-			"count": { '$sum': 1 }
+			"total-specialization": { '$sum': 1 }
 		}
 	},
 	{
 		"$group": {
 			"_id": {
-				"filiera": "$_id.filiera",
-				"profil": "$_id.profil",
+				"branch": "$_id.branch",
+				"profile": "$_id.profile",
 			},
-			"specializari": {
+			"specializations": {
 				"$push": { 
-					"specializare": "$_id.specializare",
-					"total": "$count"
+					"specialization": "$_id.specialization",
+					"total-specialization": "$total-specialization"
 				}
 			},
-			"total-profil": { "$sum": "$count" }
+			"total-profile": { "$sum": "$total-specialization" }
 		}
 	},
 	{
 		"$group": {
 			"_id": {
-				"filiera": "$_id.filiera"
+				"branch": "$_id.branch"
 			},
-			"profile": {
+			"profiles": {
 				"$push": { 
-					"profil": "$_id.profil",
-					"specializari": "$specializari",
+					"profile": "$_id.profile",
+					# TODO(ioan) Figure out why this value doesn't actually get
+					# pushed.
+					"total-profile": "$total_profile",
+					"specializations": "$specializations"
 				}
 			},
-			"total-filiera": { "$sum": "$total-profil" }
+			"total-branch": { "$sum": "$total-profile" }
+		}
+	},
+	{
+		"$project": {
+			"branch": "$_id.branch",
+			"total-branch": True,
+			"_id": False,
+			"profiles": True
 		}
 	}])
-	return json_response({ 'filiere' : res['result'] })	
+	return json_response({ 'branches' : res['result'] })	
 
 # Handles the initial loading of the one-page visualization app.
 @app.route('/app')
