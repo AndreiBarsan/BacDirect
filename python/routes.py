@@ -377,8 +377,6 @@ def api_histogram_by_subject(exam, subject, binSize = 0.1):
 		}
 	])
 
-	print "\n\n", res
-
 	return JSONEncoder().encode(res['result'])
 
 
