@@ -106,12 +106,7 @@ def api_get_data_by_county():
 		},
 	])
 
-	return json.dumps(grp)
-	#return json.dumps({'message': 'Not implemented. Mismatch between datasets.'})
-
-# TODO(andrei) Idee: ce procent din note au fost contestate
-# TODO(andrei) Idee: la cât % a contat contestația (pe materii).
-# TODO(andrei) Idee: la cât % a scăzut nota contestația (pe materii).
+	return json.dumps({'message': 'Not implemented. Mismatch between datasets.'})
 
 def validContestedExam(exam):
 	validContestedExams = {
@@ -131,7 +126,8 @@ def validExam(exam):
 	}
 	return exam in validExams
 
-# It seems that unidecode doesn't really support 
+# It seems that unidecode doesn't really support romanian characters, so this 
+# mini-helper will have to do.
 def transliterate(string):
 	romap = {
 		u'ă': 'a',
