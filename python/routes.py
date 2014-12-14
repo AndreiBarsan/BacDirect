@@ -113,23 +113,74 @@ def api_get_data_by_county():
 # TODO(andrei) Idee: la cât % a contat contestația (pe materii).
 # TODO(andrei) Idee: la cât % a scăzut nota contestația (pe materii).
 
-def validContestedSubject(subject):
-	validContestedSubjects = {
+def validContestedExam(exam):
+	validContestedExams = {
 		'notaContestatieEa': 'Contestatie limba si literatura romana',
 		'notaContestatieEb': 'Contestatie limba si literatura materna',
 		'notaContestatieEc': 'Contestatie proba profil #1 (ex. Mate)',
 		'notaContestatieEd': 'Contestatie proba profil #2 (ex. Fizica)',
 	}
-	return subject in validContestedSubjects
+	return exam in validContestedExams
 
-def validSubject(subject):
-	validSubjects = {
+def validExam(exam):
+	validExams = {
 		'notaEa': 'Limba si literatura romana',
 		'notaEb': 'Limba si literatura materna',
 		'notaEc': 'Proba profil #1 (ex. Mate)',
 		'notaEd': 'Proba profil #2 (ex. Fizica)',
 	}
-	return subject in validSubjects
+	return exam in validExams
+
+# It seems that unidecode doesn't really support 
+def transliterate(string):
+	romap = {
+		u'ă': 'a',
+		u'â': 'a',
+		u'î': 'i',
+		u'ș': 's',
+		u'ț': 't',
+		u'Ă': 'A',
+		u'Â': 'A',
+		u'Î': 'I',
+		u'Ș': 'S',
+		u'Ț': 'T',
+	}
+
+	for k in romap:
+		string = string.replace(k, romap[k])
+
+	return string
+
+def getFancyName(subject):
+	# TODO(Andrei) Cache this shit.  It's embarrassing.
+	# TODO(Andrei) Easy name list: 'Romana', 'Mate' etc.
+	validSubjects = [
+		u"Limba română (UMAN)",
+		u"Limba română (REAL)",
+		u"Matematică MATE-INFO",
+		u"Matematică TEHN",
+		u"Matematică ST-NAT",
+		u"Biologie vegetală și animală",
+		u"Anatomie și fiziologie umană, genetică și ecologie umană",
+		u"Geografie",
+		u"Istorie",
+		u"Economie",
+		u"Informatică MI C/C++",
+		u"Informatică MI Pascal",
+		u"Fizică TEO",
+		u"Fizică TEH",
+		u"Chimie anorganică TEO Nivel I/II",
+		u"Chimie anorganică TEH Nivel I/II",
+		u"Chimie organică TEO",
+		u"Chimie organică TEH"
+	]
+	validSubjectMap = {}
+	for x in validSubjects:
+		validSubjectMap[transliterate(x).lower()] = x
+	if subject.lower() in validSubjectMap:
+		return validSubjectMap[subject.lower()]
+	else:
+		return None
 
 def json_error(message):
 	return json.dumps({ 'error': message })
@@ -138,12 +189,15 @@ def contestify(subject):
 	index = len("nota")
 	return subject[:index] + "Contestatie" + subject[index:]
 
+# Return the name of the column specifying the subject of this exam.
+# Example: `notaEa' -> `subiectEa'.
+def getSubjectColumn(exam):
+	return "subiect" + exam[-2:]
+
 # Returns the number of students who took a given exam. Also works with finding 
 # out how many students contested the result of a given exam (for this use
 # `contestify(exam)' instead of `exam').
 def compute_student_count(subject):
-	print "Computing grade count: ", subject, "\n\n\n"
-
 	res = fetch_table(get_db(), BAC_MONGO_TABLE).aggregate([
 		# We only want people who actually took the exam.
 		{
@@ -262,26 +316,51 @@ def api_maintained_grade_by_contesting(subject):
 
 	return json.dumps(api_test_contested_grade_effect(subject, '$eq'))
 
-@app.route('/api/histogram_by_subject/<string:subject>', methods = ['GET'])
-@app.route('/api/histogram_by_subject/<string:subject>/<float:binSize>', methods = ['GET'])
-def api_histogram_by_subject(subject, binSize = 0.1):
-	if not validSubject(subject) and not validContestedSubject(subject):
-		return json_error('Invalid subject name.')
+# Return the grade distribution (as a histogram) for the given exam and subject
+# combination.  Example: fourth exam (`notaEa'), computer science subject
+# (`informatica').
+# Note: use '*' to ignore the particular subject and look at that exam in
+# general.
+@app.route('/api/histogram_by_subject/<string:exam>/<string:subject>', methods = ['GET'])
+@app.route('/api/histogram_by_subject/<string:exam>/<string:subject>/<float:binSize>', methods = ['GET'])
+def api_histogram_by_subject(exam, subject, binSize = 0.1):
+	if not validExam(exam) and not validContestedExam(exam):
+		return json_error('Invalid exam name.')
 
 	if binSize <= 0.0:
 		return json_error('Invalid bin size.')
 
+	if subject != "*":
+		# Also filter on subject name.
+		subjectName = getFancyName(subject)
+		if subjectName is None:
+			return json_error('Invalid subject name. (Try using \'*\' if the '+
+				'subject itself doesn\'t matter.)')
+
+		examSubject = getSubjectColumn(exam)
+		matcher = {
+			"$match": {
+				exam: { '$gt': 1 },
+				examSubject: subjectName
+			}
+		}
+	else:
+		# We don't care about the particular subject, so we look at the exam in
+		# general.  (But we still don't want to count students who didn't take
+		# the exam at all!)
+		matcher = {
+			"$match": {
+				exam: { '$gt': 1 },
+			}
+		}
+	
 	tbl = fetch_table(get_db(), BAC_MONGO_TABLE)
 	res = tbl.aggregate([
-		{
-			"$match": {
-				subject: { '$gt': 1 }
-			}
-		},
+		matcher,
 		{
 			"$project": {
         		"gradeLowerBound": {
-        			"$subtract": ["$" + subject, { "$mod": [ "$" + subject, binSize]}]
+        			"$subtract": ["$" + exam, { "$mod": [ "$" + exam, binSize] } ]
         		}
         	}
         },
@@ -297,6 +376,8 @@ def api_histogram_by_subject(subject, binSize = 0.1):
 			}
 		}
 	])
+
+	print "\n\n", res
 
 	return JSONEncoder().encode(res['result'])
 
