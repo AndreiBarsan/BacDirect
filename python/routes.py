@@ -146,13 +146,14 @@ def api_maintained_grade_by_contesting(exam):
 # Return the grade distribution (as a histogram) for the given exam and subject
 # combination.  Example: fourth exam (`notaEa'), computer science subject
 # (`informatica').
-# Note: use '*' to ignore the particular subject and look at that exam in
-# general.
+# Note: use '*' to ignore the particular subject and/or exam.
 @app.route('/api/histogram_by_subject/<string:exam>/<string:subject>', methods = ['GET'])
 @app.route('/api/histogram_by_subject/<string:exam>/<string:subject>/<float:binSize>', methods = ['GET'])
 def api_histogram_by_subject(exam, subject, binSize = 0.1):
-	if not validExam(exam) and not validContestedExam(exam):
-		return json_error('Invalid exam name.')
+	
+	if exam != "*":
+		if not validExam(exam) and not validContestedExam(exam):
+			return json_error('Invalid exam name.')
 
 	if binSize <= 0.0:
 		return json_error('Invalid bin size.')

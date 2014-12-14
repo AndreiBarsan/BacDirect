@@ -15,7 +15,7 @@ from unidecode import unidecode
 # document fields.  If a rule for a column is not present, treat as string.
 # Note: 'float' also implies that commans inside that field get replaced with 
 # periods, in order to support romanian decimals.
-# TODO(Andrei) Use a proper localization library.
+# TODO(ioan) Use a proper localization library.
 bac_column_types = {
 	"medie": "float",
 	"notaEa": "float",

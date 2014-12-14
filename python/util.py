@@ -79,8 +79,8 @@ def transliterate(string):
 	return string
 
 def getFancyName(subject):
-	# TODO(Andrei) Cache this shit.  It's embarrassing.
-	# TODO(Andrei) Easy name list: 'Romana', 'Mate' etc.
+	# TODO(ioan) Cache this shit.  It's embarrassing.
+	# TODO(ioan) Easy name list: 'Romana', 'Mate' etc.
 	validSubjects = [
 		u"Limba română (UMAN)",
 		u"Limba română (REAL)",
@@ -110,7 +110,9 @@ def getFancyName(subject):
 		return None
 
 def json_error(message):
-	return json.dumps({ 'error': message })
+	return json_response({
+		'error': message
+	});
 
 # Return the name of the column specifying the subject of this exam.
 # Example: `notaEa' -> `subiectEa'.
