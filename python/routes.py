@@ -256,6 +256,55 @@ def api_limba_moderna():
 	})
 	return json_response(res['result'])
 
+# Returns a nested list with the following levels:
+#	1. the branches (`filiere')
+#	2. the study profile (`profile')
+# 	3. the profile specialization (`specializare')
+@app.route('/api/profile_distribution')
+def api_profile_distribution():
+	# Triple nesting BITCHES!
+	tbl = fetch_table(get_db(), BAC_MONGO_TABLE)
+	res = tbl.aggregate([{
+		"$group": {
+			"_id": {
+				"filiera": "$filiera",
+				"profil": "$profil",
+				"specializare": "$specializare"
+			},
+			"count": { '$sum': 1 }
+		}
+	},
+	{
+		"$group": {
+			"_id": {
+				"filiera": "$_id.filiera",
+				"profil": "$_id.profil",
+			},
+			"specializari": {
+				"$push": { 
+					"specializare": "$_id.specializare",
+					"total": "$count"
+				}
+			},
+			"total-profil": { "$sum": "$count" }
+		}
+	},
+	{
+		"$group": {
+			"_id": {
+				"filiera": "$_id.filiera"
+			},
+			"profile": {
+				"$push": { 
+					"profil": "$_id.profil",
+					"specializari": "$specializari",
+				}
+			},
+			"total-filiera": { "$sum": "$total-profil" }
+		}
+	}])
+	return json_response({ 'filiere' : res['result'] })	
+
 # Handles the initial loading of the one-page visualization app.
 @app.route('/app')
 def app_index():
