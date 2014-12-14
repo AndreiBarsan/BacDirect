@@ -258,27 +258,59 @@ def api_limba_moderna():
 
 # Returns the existing study branches (ro: filiere) and the number of students
 # from each of them.
-@app.route('/api/get_branches')
-def api_get_branches():
+@app.route('/api/branches')
+def api_branches():
 	tbl = fetch_table(get_db(), BAC_MONGO_TABLE)
 	res = tbl.aggregate([{
-				"$group": {
-					"_id": { "filiera": "$filiera" },
-					"count": { "$sum": 1 }
-				},
+			"$group": {
+				"_id": { "branch": "$filiera" },
+				"count": { "$sum": 1 }
 			},
-			{
-				"$project": {
-					"filiera": "$_id.filiera",
-					"count": True,
-					"_id": False
-				}
+		},
+		{
+			"$project": {
+				"branch": "$_id.branch",
+				"count": True,
+				"_id": False
 			}
-		])
+		}
+	])
 
 	return json_response(res['result'])
 
-# Returns a nested list with the following levels:
+# Returns the existing study profiles from the given branch and the number of
+# students from each of them.
+@app.route('/api/profiles')
+@app.route('/api/profiles/<string:branch>')
+def api_profiles(branch = "*"):
+	tbl = fetch_table(get_db(), BAC_MONGO_TABLE)
+	pipeline = []
+
+	if branch != "*":
+		pipeline.append({
+			"$match": {
+				"filiera": transliterate(branch).lower().capitalize()
+			}
+		})
+
+	pipeline.append({
+		"$group": {
+			"_id": { "profile": "$profil" },
+			"count": { "$sum": 1 }
+		},
+	})
+	pipeline.append({
+		"$project": {
+			"profile": "$_id.profile",
+			"count": True,
+			"_id": False
+		}
+	})
+	res = tbl.aggregate(pipeline)
+
+	return json_response(res['result'])
+
+# Returns a nested dictionary with the following levels:
 #	1. the branches (`filiere')
 #	2. the study profile (`profile')
 # 	3. the profile specialization (`specializare')
