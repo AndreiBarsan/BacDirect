@@ -245,7 +245,7 @@ def api_histogram_by_subject(exam = '*', subject = '*', binSize = 0.1):
 
 	return json_response(res['result'])
 
-@app.route('/api/limba_moderna')
+@app.route('/api/foreign_language_distribution')
 def api_limba_moderna():
 	tbl = fetch_table(get_db(), BAC_MONGO_TABLE)
 	res = tbl.aggregate({
@@ -254,8 +254,6 @@ def api_limba_moderna():
 			"count": { "$sum": 1 }
 		}
 	})
-	for r in res['result']:
-		print unicode(r)#.encode('UTF-8')
 	return json_response(res['result'])
 
 # Handles the initial loading of the one-page visualization app.

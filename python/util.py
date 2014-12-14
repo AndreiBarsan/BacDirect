@@ -36,7 +36,7 @@ def json_response(obj):
 				separators=(',', ': ')
 				),
 			mimetype="application/json"
-			)
+		)
 
 
 def validContestedExam(exam):
