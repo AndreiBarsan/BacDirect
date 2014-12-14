@@ -205,3 +205,8 @@ def api_histogram_by_subject(exam, subject, binSize = 0.1):
 	])
 
 	return json_response(res['result'])
+
+# Handles the initial loading of the one-page visualization app.
+@app.route('/app')
+def app_index():
+    return render_template('index.html')

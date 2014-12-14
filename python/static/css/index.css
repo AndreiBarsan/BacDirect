@@ -1,0 +1,101 @@
+@media (min-width: 768px) {
+  .navbar .navbar-nav {
+      display: inline-block;
+      float: none;
+      vertical-align: top;
+  }
+  .navbar .navbar-collapse {
+      text-align: center;
+  }
+}
+
+#map-canvas {
+  min-height: 500px;
+}
+
+.navbar {
+  /* min-height: 64px; */
+}
+
+.navbar-default .navbar-nav>li>a {
+  /* color: #aaa; */
+}
+
+body {
+  margin-top: 50px;
+  position: relative;
+}
+
+.col-centered{
+  float: none;
+  margin: 0 auto;
+}
+
+#logo {
+  z-index:1031;
+  position: fixed;
+  left: 20%;
+  top: 0px;
+  width:80px;
+  height:80px;
+  margin-left:-40px;
+  cursor: pointer; 
+  cursor: hand;
+}
+
+.gradientBackground {
+  background: #eeeeee;
+  background: -moz-linear-gradient(top,  #eeeeee 0%, #cccccc 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#eeeeee), color-stop(100%,#cccccc));
+  background: -webkit-linear-gradient(top,  #eeeeee 0%,#cccccc 100%);
+  background: -o-linear-gradient(top,  #eeeeee 0%,#cccccc 100%);
+  background: -ms-linear-gradient(top,  #eeeeee 0%,#cccccc 100%);
+  background: linear-gradient(to bottom,  #eeeeee 0%,#cccccc 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#eeeeee', endColorstr='#cccccc',GradientType=0 );
+}
+
+.btn-gold { 
+  color: #ffffff; 
+  background-color: #FFD65E; 
+  border-color: #FFD65E; 
+} 
+.btn-gold:hover, 
+.btn-gold:focus, 
+.btn-gold:active, 
+.btn-gold.active, 
+.open .dropdown-toggle.btn-gold { 
+  color: #ffffff; 
+  background-color: #FFCD36; 
+  border-color: #FFD65E; 
+} 
+.btn-gold:active, 
+.btn-gold.active, 
+.open .dropdown-toggle.btn-gold { 
+  background-image: none; 
+} 
+.btn-gold.disabled, 
+.btn-gold[disabled], 
+fieldset[disabled] .btn-gold, 
+.btn-gold.disabled:hover, 
+.btn-gold[disabled]:hover, 
+fieldset[disabled] .btn-gold:hover, 
+.btn-gold.disabled:focus, 
+.btn-gold[disabled]:focus, 
+fieldset[disabled] .btn-gold:focus, 
+.btn-gold.disabled:active, 
+.btn-gold[disabled]:active, 
+fieldset[disabled] .btn-gold:active, 
+.btn-gold.disabled.active, 
+.btn-gold[disabled].active, 
+fieldset[disabled] .btn-gold.active { 
+  background-color: #FFD65E; 
+  border-color: #FFD65E; 
+} 
+.btn-gold .badge { 
+  color: #FFD65E; 
+  background-color: #ffffff; 
+}
+.btn-gold .badge { 
+  color: #F3D883; 
+  background-color: #FFFFFF; 
+}
