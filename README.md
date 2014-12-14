@@ -14,6 +14,8 @@ Setup guide:
 		4.1. Go to `/python/unidecode`.
 		4.2. Run `python setup.py install`.
 		4.3. (Optional) Run `python setup.py test`.
-	5. Go to `/python` and run `python -m python.data.bac_csv_to_mongo` to
+	5. Go to `/python` and run `python -m data.bac_csv_to_mongo` to
 		import the data into the database.
-	6. Go to `/python` and run `python -m python.server`.
+	6. Go to `/python` and run `python -m server`.
+	7. ???
+	8. PROFIT!
