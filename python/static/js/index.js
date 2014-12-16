@@ -30,14 +30,72 @@ function plotHistogram(container, exam, subject, binSize) {
   });
 }  
 
+function renderVenn() {
+  "use strict"
+  // define sets and set set intersections
+  $.getJSON("/api/branches", function(data) {
+    console.log(data)
+    var sets = []
+    for(var i = 0; i < data.length; ++i) {
+      sets.push({
+        label: data[i].branch,
+        size: data[i].count
+      })
+    }
+    console.log(sets)
+    var overlaps = []
+    for(var i = 0; i < data.length; ++i) {
+      for(var j = 0; j < data.length; ++j) {
+        overlaps.push({sets: [i, j], size: 0})
+      }
+    }
+
+    sets = venn.venn(sets, overlaps);
+    venn.drawD3Diagram(d3.select("#venn"), sets, 1000, 1000);
+  })
+  
+}
+
 
 $(function(){
+  $('#mainTabs a').click(function(e) {
+    e.preventDefault()
+    $(this).tab('show')
+  })
+
+  renderVenn()
+
+  var binSize = 0.5
+
+  function refreshHistogram(histogram) {
+    var select = histogram.find("select")
+    var canvas = histogram.find(".canvas")
+    var exam = $(select).val()
+    
+    plotHistogram($(canvas), exam, "*", binSize)
+  }
+
+  function refreshAll() {
+    $(".histogram").each(function() {
+      refreshHistogram($(this))
+    })
+  }
+
+  $("#binSize").change(function() {
+    binSize = parseFloat($(this).val())
+    $("#binSizeDisplay").html(binSize)
+    refreshAll()
+  })
+  $("#binSize").val(binSize)
+  $("#binSize").change()
+
+  $("#refresh").click(refreshAll)
+
   $(".histogram").each(function() {
-    var canvas = $(this).find(".canvas")
-    var binSize = 0.5
-    var select = $(this).find("select")
+    var select = $(this).find('select')
+    var histogram = $(this)
     select.change(function() {
-      plotHistogram($(canvas), $(this).val(), "*", binSize)
+      refreshHistogram(histogram)
     })
     select.change()
   })
