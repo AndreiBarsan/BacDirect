@@ -34,7 +34,6 @@ function renderVenn() {
   "use strict"
   // define sets and set set intersections
   $.getJSON("/api/branches", function(data) {
-    console.log(data)
     var sets = []
     for(var i = 0; i < data.length; ++i) {
       sets.push({
@@ -42,7 +41,6 @@ function renderVenn() {
         size: data[i].count
       })
     }
-    console.log(sets)
     var overlaps = []
     for(var i = 0; i < data.length; ++i) {
       for(var j = 0; j < data.length; ++j) {
