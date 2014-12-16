@@ -158,6 +158,7 @@ def api_maintained_grade_by_contesting(exam):
 @app.route('/api/histogram_by_subject', methods = ['GET'])
 @app.route('/api/histogram_by_subject/<int:binSize>', methods = ['GET'])
 @app.route('/api/histogram_by_subject/<float:binSize>', methods = ['GET'])
+@app.route('/api/histogram_by_subject/<string:exam>', methods = ['GET'])
 @app.route('/api/histogram_by_subject/<string:exam>/<string:subject>', methods = ['GET'])
 @app.route('/api/histogram_by_subject/<string:exam>/<string:subject>/<int:binSize>', methods = ['GET'])
 @app.route('/api/histogram_by_subject/<string:exam>/<string:subject>/<float:binSize>', methods = ['GET'])
