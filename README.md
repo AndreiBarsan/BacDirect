@@ -18,7 +18,7 @@ Setup guide (Windows and Linux)
 	3. Install pip. Then flask (follow the tutorial `http://flask.pocoo.org/`).
 		Also install pymongo using pip under venv (`pip install pymongo`).
 	4. Install `unidecode` (might end up getting discarded in the future).
-		4.1. Go to `/python/unidecode`.
+    4.1. Go to `/python/unidecode`.
     4.2. If the folder is empty, make sure you also grabbed this repository's submodules.  Use `git submodule update --init --recursive` to do this. 
 		4.3. Run `python setup.py install`.
 		4.4. (Optional) Run `python setup.py test`.
